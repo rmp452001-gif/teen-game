@@ -1,50 +1,44 @@
 import { useState, useEffect } from "react";
 
-// 🔊 點擊音效（網路音效）
-const hitSound = new Audio(
-  "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"
-);
+const hitSound = new Audio("https://actions.google.com/sounds/v1/cartoon/metal_twang.ogg");
+const startSound = new Audio("https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_drum_hit.ogg");
 
 function App() {
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [active, setActive] = useState(false);
   const [pos, setPos] = useState({ x: 50, y: 50 });
-  const [best, setBest] = useState(
-    Number(localStorage.getItem("bestScore") || 0)
-  );
+  const [best, setBest] = useState(Number(localStorage.getItem("bestScore") || 0));
+  const [shake, setShake] = useState(false);
 
-  // ⏱ 倒數計時
   useEffect(() => {
     if (!active) return;
     if (timeLeft === 0) {
       setActive(false);
       return;
     }
-    const t = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+    const t = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
     return () => clearTimeout(t);
   }, [active, timeLeft]);
 
-  // 🎮 開始遊戲
   const start = () => {
+    startSound.currentTime = 0;
+    startSound.play();
     setScore(0);
     setTimeLeft(30);
     setActive(true);
     move();
   };
 
-  // ⚡ 閃電亂跑
   const move = () => {
-    setPos({
-      x: Math.random() * 80,
-      y: Math.random() * 80,
-    });
+    setPos({ x: Math.random() * 80, y: Math.random() * 80 });
   };
 
-  // ✅ 點到
   const hit = () => {
     hitSound.currentTime = 0;
     hitSound.play();
+    setShake(true);
+    setTimeout(() => setShake(false), 120);
 
     const newScore = score + 1;
     setScore(newScore);
@@ -58,108 +52,69 @@ function App() {
 
   return (
     <div style={styles.page}>
-      {/* 🔹 動畫 CSS */}
-      <style>
-        {`
-        @keyframes pop {
-          from { transform: scale(0); opacity: 0; }
-          to   { transform: scale(1); opacity: 1; }
-        }
-        `}
-      </style>
+      <style>{css}</style>
 
-      <div style={styles.card}>
-        <h2>⚡ 青春反應力 ⚡</h2>
-        <p>30 秒內狂點閃電</p>
+      <div style={{ ...styles.card, animation: shake ? "shake 0.12s" : "none" }}>
+        <div style={styles.title}>⚡ 反 應 力 爆 表 ⚡</div>
+        <div style={styles.subtitle}>點爆我！點到手殘為止 🔥</div>
 
         <div style={styles.info}>
-          <span>分數：{score}</span>
-          <span>時間：{timeLeft}s</span>
+          <span>🔥 分數 {score}</span>
+          <span>⏱ {timeLeft}s</span>
+        </div>
+
+        <div style={styles.progressWrap}>
+          <div style={{ ...styles.progress, width: `${(timeLeft / 30) * 100}%` }} />
         </div>
 
         <div style={styles.gameArea}>
           {active && (
             <button
               onClick={hit}
-              style={{
-                ...styles.bolt,
-                left: `${pos.x}%`,
-                top: `${pos.y}%`,
-              }}
+              style={{ ...styles.bolt, left: `${pos.x}%`, top: `${pos.y}%` }}
+              aria-label="bolt"
             >
-              ⚡
+              💥⚡
             </button>
           )}
         </div>
 
         {!active ? (
-          <button style={styles.startBtn} onClick={start}>
-            開始遊戲
-          </button>
+          <button style={styles.startBtn} onClick={start}>🚀 開 爆</button>
         ) : (
-          <p>快點擊！👀</p>
+          <div style={styles.hint}>狂點！！！不要想 🤯</div>
         )}
 
         {!active && timeLeft === 0 && (
-          <>
-            <h3>🎉 本局得分：{score}</h3>
-            <p>🏆 最高分紀錄：{best}</p>
-          </>
+          <div style={styles.result}>
+            <div>🎉 本局：{score}</div>
+            <div>🏆 最高：{best}</div>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-// 🎨 樣式
+const css = `
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes glow { 0%{filter: drop-shadow(0 0 0 #f0f);} 50%{filter: drop-shadow(0 0 12px #f0f);} 100%{filter: drop-shadow(0 0 0 #f0f);} }
+@keyframes shake { 0%{transform: translate(0,0);} 50%{transform: translate(2px,-2px);} 100%{transform: translate(0,0);} }
+`;
+
 const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #f9a8d4, #c084fc)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    fontFamily: "sans-serif",
-  },
-  card: {
-    width: 340,
-    background: "white",
-    borderRadius: 18,
-    padding: 20,
-    textAlign: "center",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
-  },
-  info: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    fontWeight: "bold",
-  },
-  gameArea: {
-    position: "relative",
-    height: 220,
-    background: "#f3f4f6",
-    borderRadius: 12,
-    marginBottom: 10,
-    overflow: "hidden",
-  },
-  bolt: {
-    position: "absolute",
-    fontSize: 38,
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    animation: "pop 0.3s ease-out",
-  },
-  startBtn: {
-    padding: "8px 16px",
-    fontSize: 16,
-    borderRadius: 8,
-    border: "none",
-    background: "#a855f7",
-    color: "white",
-    cursor: "pointer",
-  },
+  page: { minHeight: "100vh", background: "linear-gradient(135deg,#0f172a,#f472b6,#22d3ee)", display: "flex", justifyContent: "center", alignItems: "center", fontFamily: "system-ui, -apple-system" },
+  card: { width: 360, background: "rgba(0,0,0,.65)", borderRadius: 22, padding: 18, color: "#fff", boxShadow: "0 20px 40px rgba(0,0,0,.5)", backdropFilter: "blur(6px)", border: "2px solid rgba(255,0,255,.35)" },
+  title: { textAlign: "center", fontSize: 22, letterSpacing: 2, textShadow: "0 0 12px #f0f" },
+  subtitle: { textAlign: "center", opacity: .85, marginBottom: 10 },
+  info: { display: "flex", justifyContent: "space-between", fontWeight: 700, marginBottom: 6 },
+  progressWrap: { height: 8, background: "#111", borderRadius: 999, overflow: "hidden", boxShadow: "inset 0 0 6px rgba(255,255,255,.2)" },
+  progress: { height: "100%", background: "linear-gradient(90deg,#22d3ee,#f472b6)", transition: "width .3s" },
+  gameArea: { position: "relative", height: 220, marginTop: 10, background: "radial-gradient(circle at 50% 30%, #111 0%, #000 70%)", borderRadius: 14, overflow: "hidden", border: "1px solid rgba(255,255,255,.15)" },
+  bolt: { position: "absolute", fontSize: 34, padding: 6, background: "transparent", border: "none", cursor: "pointer", animation: "pop .2s ease-out, glow .8s ease-in-out" },
+  startBtn: { width: "100%", marginTop: 10, padding: 10, background: "linear-gradient(90deg,#a855f7,#ec4899)", color: "#fff", border: "none", borderRadius: 12, fontSize: 18, fontWeight: 900, cursor: "pointer", boxShadow: "0 0 18px rgba(236,72,153,.6)" },
+  hint: { textAlign: "center", opacity: .9, marginTop: 6 },
+  result: { display: "flex", justifyContent: "space-between", marginTop: 8, fontWeight: 900 }
 };
 
 export default App;
